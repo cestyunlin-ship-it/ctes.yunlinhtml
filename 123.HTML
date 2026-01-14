@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>數據統計分析系統</title>
+    <script src="cdnjs.cloudflare.com"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; font-weight: bold; }
+        select, input { padding: 5px; width: 200px; }
+        .sub-menu { margin-left: 120px; margin-top: 5px; display: none; }
+        button { padding: 10px 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>數據統計登錄系統</h2>
+    <form id="dataForm">
+        <div class="form-group"><label>執行狀況：</label><input type="text" id="status" required></div>
+        <div class="form-group"><label>日期時間：</label><input type="datetime-local" id="datetime" required></div>
+        <div class="form-group"><label>會議類別：</label><input type="text" id="meetingType" required></div>
+        
+        <div class="form-group">
+            <label>人次：</label>
+            <select id="genderMain">
+                <option value="男生">男生</option>
+                <option value="女生">女生</option>
+                <option value="二次元">二次元</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>不利處境者：</label>
+            <select id="disadvantageType" onchange="toggleSubMenu()">
+                <option value="無">無</option>
+                <option value="身障者">身障者</option>
+                <option value="原住民">原住民</option>
+                <option value="新住民">新住民</option>
+                <option value="其他">其他</option>
+            </select>
+            <div id="subGenderContainer" class="sub-menu">
+                細分類性別：
+                <select id="subGender">
+                    <option value="男性">男性</option>
+                    <option value="女性">女性</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>居住縣市：</label>
+            <select id="city">
+                <option>台中市</option><option>彰化縣</option><option>南投縣</option>
+                <option>雲林縣</option><option>嘉義縣</option><option>嘉義市</option><option>金門縣</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>年齡：</label>
+            <select id="age">
+                <option>0~19</option><option>20~29</option><option>30~39</option>
+                <option>40~49</option><option>50~59</option><option>60以上</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>學歷：</label>
+            <select id="edu">
+                <option>國中以下</option><option>高中職</option><option>副學士</option>
+                <option>學士</option><option>碩士</option><option>博士</option>
+            </select>
+        </div>
+
+        <button type="button" onclick="submitData()">提交並存檔</button>
+        <button type="button" style="background:#007bff;" onclick="exportToExcel()">匯出總表 (Excel)</button>
+    </form>
+
+    <script>
+        let localData = [];
+
+        function toggleSubMenu() {
+            const type = document.getElementById('disadvantageType').value;
+            const subMenu = document.getElementById('subGenderContainer');
+            subMenu.style.display = (type !== '無') ? 'block' : 'none';
+        }
+
+        async function submitData() {
+            const entry = {
+                id: Date.now(),
+                status: document.getElementById('status').value,
+                time: document.getElementById('datetime').value,
+                meeting: document.getElementById('meetingType').value,
+                gender: document.getElementById('genderMain').value,
+                disadvantage: document.getElementById('disadvantageType').value,
+                disadvantageGender: document.getElementById('disadvantageType').value !== '無' ? document.getElementById('subGender').value : 'N/A',
+                city: document.getElementById('city').value,
+                age: document.getElementById('age').value,
+                education: document.getElementById('edu').value
+            };
+
+            // 1. 存入本地數組供立即匯出
+            localData.push(entry);
+
+            // 2. 串接 Google Sheets API (後續說明)
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbxVICmVLY9ElAs4hHwxPwUA7pNTWUm8b-r6ZOYkX_H7T7I0L-EvJ01ntFTybM0g-woz/exec';
+            try {
+                await fetch(scriptURL, { method: 'POST', body: JSON.stringify(entry)});
+                alert('資料已成功上傳雲端資料庫！');
+            } catch (e) {
+                console.error('上傳失敗，但已暫存於本地', e);
+            }
+        }
+
+        function exportToExcel() {
+            if(localData.length === 0) return alert('目前無資料可匯出');
+            const worksheet = XLSX.utils.json_to_sheet(localData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "統計數據");
+            XLSX.writeFile(workbook, "數據總表.xlsx");
+        }
+    </script>
+</body>
+</html>
