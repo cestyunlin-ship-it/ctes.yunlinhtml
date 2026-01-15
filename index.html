@@ -26,7 +26,6 @@
         .btn-submit { background: #28a745; color: white; }
         .btn-excel { background: #007bff; color: white; }
         button:hover { opacity: 0.8; transform: translateY(-1px); }
-        /* 錯誤跳轉時的高亮效果 */
         .error-focus { border: 2px solid #dc3545 !important; background-color: #fff8f8; }
     </style>
 </head>
@@ -38,7 +37,7 @@
         <div class="form-grid">
             <div class="field"><label>執行狀況</label><input type="text" id="status" value="已執行" readonly></div>
             <div class="field"><label>日期時間</label><input type="text" id="datetime" readonly></div>
-            <div class="field"><label>會議類別 (點擊提交後可修改)</label><input type="text" id="meeting" placeholder="請輸入活動名稱" required></div>
+            <div class="field"><label>會議類別</label><input type="text" id="meeting" placeholder="請輸入活動名稱" required></div>
             <div class="field"><label>姓名</label><input type="text" id="name" placeholder="請填寫姓名" required></div>
             <div class="field">
                 <label>性別 (人次選項)</label>
@@ -51,7 +50,7 @@
         </div>
 
         <div class="field">
-            <label>身份別 (點選分類)</label>
+            <label>身份別 (不利處境者分類)</label>
             <div class="radio-group">
                 <label class="radio-item"><input type="radio" name="idType" value="無" checked onclick="toggleSub(false)"> 一般民眾</label>
                 <label class="radio-item"><input type="radio" name="idType" value="身障者" onclick="toggleSub(true)"> 身障者</label>
@@ -60,7 +59,7 @@
                 <label class="radio-item"><input type="radio" name="idType" value="其他" onclick="toggleSub(true)"> 其他</label>
             </div>
             <div id="subGenderBox" class="sub-menu">
-                <label>不利處境者細分性別：</label>
+                <label>不利處境者性別：</label>
                 <select id="subGender">
                     <option value="男性">男性</option>
                     <option value="女性">女性</option>
@@ -116,12 +115,12 @@
     async function submitData() {
         const nameEl = document.getElementById('name');
         const meetingEl = document.getElementById('meeting');
+        const genderEl = document.getElementById('gender');
+        const subGenderEl = document.getElementById('subGender');
 
-        // 清除先前錯誤樣式
         nameEl.classList.remove('error-focus');
         meetingEl.classList.remove('error-focus');
 
-        // 資料校驗與自動轉跳
         if (!meetingEl.value) {
             alert("請填寫「會議類別」！");
             meetingEl.classList.add('error-focus');
@@ -135,15 +134,17 @@
             return;
         }
 
-        const idType = document.querySelector('input[name="idType"]:checked').value;
+        const idTypeSelected = document.querySelector('input[name="idType"]:checked').value;
+        
+        // 修正：代入人次性別與身份細分性別
         const entry = {
-            "執行狀況": "已執行",
+            "執行狀況": document.getElementById('status').value,
             "日期時間": document.getElementById('datetime').value,
             "會議類別": meetingEl.value,
             "姓名": nameEl.value,
-            "人次(性別)": document.getElementById('gender').value,
-            "身份別": idType,
-            "身份細分性別": idType !== "無" ? document.getElementById('subGender').value : "N/A",
+            "人次(性別)": genderEl.options[genderEl.selectedIndex].value,
+            "身份別": idTypeSelected,
+            "身份細分性別": idTypeSelected !== "無" ? subGenderEl.options[subGenderEl.selectedIndex].value : "N/A",
             "居住縣市": document.getElementById('city').value,
             "年齡": document.getElementById('age').value,
             "學歷": document.getElementById('edu').value
@@ -156,18 +157,16 @@
             fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
             alert(`資料提交成功！`);
         } catch (e) {
-            console.error('儲存失敗', e);
+            console.error('雲端儲存失敗', e);
         }
 
-        // 清空姓名
         nameEl.value = "";
 
-        // 彈出視窗詢問活動狀態
         setTimeout(() => {
-            const isFinished = confirm("該場活動是否已結束？\n(點擊「確定」將填寫新活動類別；點擊「取消」則繼續沿用當前類別)");
+            const isFinished = confirm("該場活動是否已結束？\n(確定：輸入新活動類別；取消：沿用當前類別)");
             if (isFinished) {
                 const newMeeting = prompt("請輸入下一場活動的「會議類別」：", meetingEl.value);
-                if (newMeeting !== null) {
+                if (newMeeting !== null && newMeeting !== "") {
                     meetingEl.value = newMeeting;
                 }
             }
