@@ -4,153 +4,195 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數據統計分析系統</title>
-    <!-- 引入 Excel 處理函式庫 (SheetJS) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="cdnjs.cloudflare.com"></script>
     <style>
-        :root { font-size: calc(14px + 0.5vw); }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
-        .card { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #1a73e8; font-size: 1.8rem; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
-        .field { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        input[readonly] { background: #e9ecef; }
-        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
-        .radio-item { display: flex; align-items: center; cursor: pointer; }
-        .radio-item input { width: auto; margin-right: 5px; }
-        .sub-menu { display: none; margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 6px; }
-        .btns { margin-top: 25px; display: flex; gap: 10px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1.1rem; }
-        .btn-save { background: #28a745; color: white; }
-        .btn-excel { background: #007bff; color: white; }
-        button:hover { opacity: 0.8; }
+        /* 依螢幕縮放字體：手機小、電腦大 */
+        html { font-size: calc(14px + 0.5vw); }
+        .error-border { border: 2px solid #ef4444 !important; }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 p-4 md:p-10">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-center text-blue-600">會議數據統計系統</h1>
+        
+        <form id="dataForm" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 自動帶入欄位 -->
+                <div>
+                    <label class="block font-semibold">執行狀況</label>
+                    <input type="text" id="status" value="已執行" readonly class="w-full p-2 bg-gray-200 rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold">日期時間</label>
+                    <input type="text" id="timestamp" readonly class="w-full p-2 bg-gray-200 rounded">
+                </div>
 
-<div class="card">
-    <h2>📊 數據統計與分析系統</h2>
-    <form id="dataForm">
-        <div class="form-grid">
-            <div class="field"><label>項次</label><input type="text" id="seq" value="1" readonly></div>
-            <div class="field"><label>執行狀況</label><input type="text" id="status" value="已執行" readonly></div>
-            <div class="field"><label>日期時間</label><input type="text" id="datetime" readonly></div>
-            <div class="field"><label>姓名</label><input type="text" id="name" placeholder="請輸入姓名" required></div>
-            <div class="field">
-                <label>人次 (性別)</label>
-                <select id="gender">
-                    <option value="男生">男生</option>
-                    <option value="女生">女生</option>
-                    <option value="二次元">二次元</option>
-                </select>
+                <!-- 智慧功能：自動更換類別 -->
+                <div>
+                    <label class="block font-semibold">會議類別</label>
+                    <select id="meetingType" required class="w-full p-2 border rounded">
+                        <option value="常規會議">常規會議</option>
+                        <option value="專案報告">專案報告</option>
+                        <option value="緊急討論">緊急討論</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold">姓名</label>
+                    <input type="text" id="name" required placeholder="請輸入姓名" class="w-full p-2 border rounded">
+                </div>
+
+                <div>
+                    <label class="block font-semibold">性別</label>
+                    <select id="gender" required class="w-full p-2 border rounded">
+                        <option value="">請選擇</option>
+                        <option value="男生">男生</option>
+                        <option value="女生">女生</option>
+                        <option value="二次元">二次元</option>
+                    </select>
+                </div>
+
+                <!-- 身份別與次級選單 -->
+                <div>
+                    <label class="block font-semibold">身份別</label>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        <label> 身障者</label>
+                        <label> 原住民</label>
+                        <label> 新住民</label>
+                        <label> 其他</label>
+                    </div>
+                    <select id="subGender" class="w-full mt-2 p-2 border rounded bg-blue-50">
+                        <option value="">請先選擇身份 (選填性別)</option>
+                        <option value="男性">男性</option>
+                        <option value="女性">女性</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold">居住縣市</label>
+                    <select id="city" required class="w-full p-2 border rounded">
+                        <option value="">請選擇</option>
+                        <option value="台中市">台中市</option>
+                        <option value="彰化縣">彰化縣</option>
+                        <option value="南投縣">南投縣</option>
+                        <option value="雲林縣">雲林縣</option>
+                        <option value="嘉義縣">嘉義縣</option>
+                        <option value="嘉義市">嘉義市</option>
+                        <option value="金門縣">金門縣</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold">年齡</label>
+                    <select id="age" required class="w-full p-2 border rounded">
+                        <option value="">請選擇</option>
+                        <option value="0~19">0~19</option>
+                        <option value="20~29">20~29</option>
+                        <option value="30~39">30~39</option>
+                        <option value="40~49">40~49</option>
+                        <option value="50~59">50~59</option>
+                        <option value="60以上">60以上</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold">學歷</label>
+                    <select id="education" required class="w-full p-2 border rounded">
+                        <option value="">請選擇</option>
+                        <option value="國中以下">國中以下</option>
+                        <option value="高中職">高中職</option>
+                        <option value="副學士">副學士</option>
+                        <option value="學士">學士</option>
+                        <option value="碩士">碩士</option>
+                        <option value="博士">博士</option>
+                    </select>
+                </div>
             </div>
-        </div>
 
-        <div class="field">
-            <label>不利處境者分類 (點選後會出現細分選項)</label>
-            <div class="radio-group">
-                <label class="radio-item"><input type="radio" name="idType" value="無" checked onclick="toggleSub(false)"> 一般民眾</label>
-                <label class="radio-item"><input type="radio" name="idType" value="身障者" onclick="toggleSub(true)"> 身障者</label>
-                <label class="radio-item"><input type="radio" name="idType" value="原住民" onclick="toggleSub(true)"> 原住民</label>
-                <label class="radio-item"><input type="radio" name="idType" value="新住民" onclick="toggleSub(true)"> 新住民</label>
-                <label class="radio-item"><input type="radio" name="idType" value="其他" onclick="toggleSub(true)"> 其他</label>
+            <div class="mt-6 flex gap-4">
+                <button type="button" onclick="handleSubmit()" class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition">提交並存入資料庫</button>
+                <button type="button" onclick="exportToExcel()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">彙整並下載 Excel</button>
             </div>
-            <div id="subGenderBox" class="sub-menu">
-                <label>身分細分性別：</label>
-                <select id="subGender">
-                    <option value="男性">男性</option>
-                    <option value="女性">女性</option>
-                </select>
-            </div>
-        </div>
+        </form>
+    </div>
 
-        <div class="form-grid">
-            <div class="field">
-                <label>居住縣市</label>
-                <select id="city">
-                    <option>台中市</option><option>彰化縣</option><option>南投縣</option>
-                    <option>雲林縣</option><option>嘉義縣</option><option>嘉義市</option><option>金門縣</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>年齡</label>
-                <select id="age">
-                    <option>0~19</option><option>20~29</option><option>30~39</option>
-                    <option>40~49</option><option>50~59</option><option>60以上</option>
-                </select>
-            </div>
-        </div>
+    <script>
+        // 初始化時間
+        document.getElementById('timestamp').value = new Date().toLocaleString();
 
-        <div class="field">
-            <label>學歷</label>
-            <select id="edu">
-                <option>國中以下</option><option>高中職</option><option>副學士</option>
-                <option>學士</option><option>碩士</option><option>博士</option>
-            </select>
-        </div>
+        let allData = JSON.parse(localStorage.getItem('meetingDB')) || [];
 
-        <div class="btns">
-            <button type="button" class="btn-save" onclick="submitSingle()">提交單筆資料</button>
-            <button type="button" class="btn-excel" onclick="exportExcel()">彙整並匯出 Excel</button>
-        </div>
-    </form>
-</div>
+        // 提交處理
+        function handleSubmit() {
+            const form = document.getElementById('dataForm');
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            let firstError = null;
 
-<script>
-    let localDB = []; 
+            // 驗證與跳轉錯誤
+            inputs.forEach(input => {
+                if (!input.value || (input.type === 'radio' && !form.identity.value)) {
+                    input.classList.add('error-border');
+                    if (!firstError) firstError = input;
+                } else {
+                    input.classList.remove('error-border');
+                }
+            });
 
-    function updateTime() {
-        const now = new Date();
-        document.getElementById('datetime').value = now.toLocaleString('zh-TW');
-    }
-    setInterval(updateTime, 1000);
-    updateTime();
+            if (firstError) {
+                firstError.focus();
+                alert('請填寫完整資訊！');
+                return;
+            }
 
-    function toggleSub(show) {
-        document.getElementById('subGenderBox').style.display = show ? 'block' : 'none';
-    }
+            // 蒐集資料
+            const entry = {
+                執行狀況: "已執行",
+                日期時間: new Date().toLocaleString(),
+                會議類別: document.getElementById('meetingType').value,
+                姓名: document.getElementById('name').value,
+                性別: document.getElementById('gender').value,
+                身份別: form.querySelector('input[name="identity"]:checked').value,
+                身份性別: document.getElementById('subGender').value,
+                居住縣市: document.getElementById('city').value,
+                年齡: document.getElementById('age').value,
+                學歷: document.getElementById('education').value
+            };
 
-    async function submitSingle() {
-        const idType = document.querySelector('input[name="idType"]:checked').value;
-        const entry = {
-            "項次": localDB.length + 1,
-            "執行狀況": "已執行",
-            "日期時間": document.getElementById('datetime').value,
-            "會議類別": "", // 在 Excel 中保留空白欄位供自行填寫
-            "姓名": document.getElementById('name').value,
-            "人次(性別)": document.getElementById('gender').value,
-            "不利處境者分類": idType,
-            "分類細分性別": idType !== "無" ? document.getElementById('subGender').value : "N/A",
-            "居住縣市": document.getElementById('city').value,
-            "年齡": document.getElementById('age').value,
-            "學歷": document.getElementById('edu').value
-        };
+            // 儲存至資料庫 (此處以 localStorage 模擬單筆儲存，建議串接 Google Apps Script API)
+            allData.push(entry);
+            localStorage.setItem('meetingDB', JSON.stringify(allData));
+            
+            alert('提交成功！資料已存入雲端模擬庫。');
+            form.reset();
+            document.getElementById('timestamp').value = new Date().toLocaleString();
+            smartUpdateMeeting(); // 執行智慧更新
+        }
 
-        if(!entry.姓名) return alert("請填寫姓名！");
+        // 智慧更換會議類別邏輯
+        function smartUpdateMeeting() {
+            const types = ["常規會議", "專案報告", "緊急討論"];
+            const current = document.getElementById('meetingType').value;
+            const nextIndex = (types.indexOf(current) + 1) % types.length;
+            document.getElementById('meetingType').value = types[nextIndex];
+        }
 
-        localDB.push(entry);
+        // 下載 Excel (自動彙整多筆為單一檔案)
+        function exportToExcel() {
+            if (allData.length === 0) return alert("尚無資料可匯出");
+            
+            const ws = XLSX.utils.json_to_sheet(allData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "會議數據");
+            
+            // 下載檔案
+            XLSX.writeFile(wb, `會議數據彙整_${new Date().toLocaleDateString()}.xlsx`);
+        }
 
-        // 存入 Google Sheets
-        const gas_url = "https://script.google.com/macros/s/AKfycbxEo19UO3y2lHG8FMEiKWcmCJXGYu4IhXfWjFGS-hRTeTDtIQ75J9hI0dEu9feKRw/exec";
-        try {
-            fetch(gas_url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry)});
-            alert(`第 ${entry.項次} 筆資料提交成功！`);
-        } catch(e) { console.log(e); }
-
-        document.getElementById('name').value = "";
-        document.getElementById('seq').value = localDB.length + 1;
-    }
-
-    function exportExcel() {
-        if(localDB.length === 0) return alert("尚無資料可匯出！");
-        const ws = XLSX.utils.json_to_sheet(localDB);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "統計數據");
-        XLSX.writeFile(wb, "數據彙整總表.xlsx");
-    }
-</script>
-
+        function updateSubGender() {
+            // 當選擇身份時，可連動提示
+            document.getElementById('subGender').classList.add('bg-yellow-50');
+        }
+    </script>
 </body>
 </html>
