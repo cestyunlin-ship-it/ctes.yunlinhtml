@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數據統計分析系統</title>
-    <!-- 引入 SheetJS 處理 Excel 匯出 -->
+    <!-- 修正：補上 SheetJS 處理 Excel 匯出函式庫連結 -->
     <script src="cdnjs.cloudflare.com"></script>
     <style>
         :root { font-size: calc(14px + 0.5vw); }
@@ -37,7 +37,7 @@
         <div class="form-grid">
             <div class="field"><label>執行狀況</label><input type="text" id="status" value="已執行" readonly></div>
             <div class="field"><label>日期時間</label><input type="text" id="datetime" readonly></div>
-            <div class="field"><label>會議類別</label><input type="text" id="meeting" placeholder="請輸入活動名稱" required></div>
+            <div class="field"><label>會議類別 (提交後可修改)</label><input type="text" id="meeting" placeholder="請輸入活動名稱" required></div>
             <div class="field"><label>姓名</label><input type="text" id="name" placeholder="請填寫姓名" required></div>
             <div class="field">
                 <label>性別 (人次選項)</label>
@@ -59,7 +59,7 @@
                 <label class="radio-item"><input type="radio" name="idType" value="其他" onclick="toggleSub(true)"> 其他</label>
             </div>
             <div id="subGenderBox" class="sub-menu">
-                <label>不利處境者性別：</label>
+                <label>不利處境者細分性別：</label>
                 <select id="subGender">
                     <option value="男性">男性</option>
                     <option value="女性">女性</option>
@@ -134,15 +134,16 @@
             return;
         }
 
+        // 獲取選擇的身份別
         const idTypeSelected = document.querySelector('input[name="idType"]:checked').value;
         
-        // 修正：代入人次性別與身份細分性別
+        // 修正：明確抓取下拉選單目前的數值
         const entry = {
-            "執行狀況": document.getElementById('status').value,
+            "執行狀況": "已執行",
             "日期時間": document.getElementById('datetime').value,
             "會議類別": meetingEl.value,
             "姓名": nameEl.value,
-            "人次(性別)": genderEl.options[genderEl.selectedIndex].value,
+            "性別(人次)": genderEl.options[genderEl.selectedIndex].value,
             "身份別": idTypeSelected,
             "身份細分性別": idTypeSelected !== "無" ? subGenderEl.options[subGenderEl.selectedIndex].value : "N/A",
             "居住縣市": document.getElementById('city').value,
@@ -152,18 +153,22 @@
 
         localData.push(entry);
 
+        // 使用您的 Google Apps Script 網址
         const scriptURL = 'https://script.google.com/macros/s/AKfycbxEo19UO3y2lHG8FMEiKWcmCJXGYu4IhXfWjFGS-hRTeTDtIQ75J9hI0dEu9feKRw/exec';
+        
         try {
             fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
             alert(`資料提交成功！`);
         } catch (e) {
-            console.error('雲端儲存失敗', e);
+            console.error('儲存失敗', e);
         }
 
+        // 清空姓名供下一位輸入
         nameEl.value = "";
 
+        // 彈出視窗詢問活動狀態
         setTimeout(() => {
-            const isFinished = confirm("該場活動是否已結束？\n(確定：輸入新活動類別；取消：沿用當前類別)");
+            const isFinished = confirm("該場活動是否已結束？\n(按「確定」更換新會議類別；按「取消」沿用當前類別)");
             if (isFinished) {
                 const newMeeting = prompt("請輸入下一場活動的「會議類別」：", meetingEl.value);
                 if (newMeeting !== null && newMeeting !== "") {
@@ -175,9 +180,11 @@
 
     function exportExcel() {
         if (localData.length === 0) return alert("尚無資料可導出");
+        // 使用 SheetJS 將 JS 物件陣列轉為工作表
         const ws = XLSX.utils.json_to_sheet(localData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "統計總表");
+        // 自動下載 Excel 檔案
         XLSX.writeFile(wb, `數據彙整表_${new Date().getTime()}.xlsx`);
     }
 </script>
