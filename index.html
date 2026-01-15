@@ -3,179 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會議數據統計分析系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>數據統計分析系統</title>
+    <!-- 引入 SheetJS 處理 Excel 匯出 -->
     <script src="cdnjs.cloudflare.com"></script>
     <style>
-        /* 響應式字體：隨螢幕寬度自動縮放 */
-        html { font-size: calc(14px + 0.3vw); }
-        .error-field { border: 2px solid #ff0000 !important; background-color: #fff5f5; }
+        /* 響應式字體：依裝置螢幕縮放 */
+        :root { font-size: calc(14px + 0.5vw); }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .card { max-width: 900px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
+        
+        /* 佈局設計 */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        input[readonly] { background: #eee; cursor: not-allowed; }
+
+        /* 身份別點選區 */
+        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
+        .radio-item { display: flex; align-items: center; cursor: pointer; font-size: 0.95rem; }
+        .radio-item input { width: auto; margin-right: 5px; }
+
+        .sub-menu { display: none; margin-top: 10px; padding: 12px; background: #e3f2fd; border-radius: 6px; border-left: 5px solid #2196f3; }
+
+        /* 按鈕設計 */
+        .btns { margin-top: 25px; display: flex; gap: 10px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1.1rem; }
+        .btn-submit { background: #28a745; color: white; }
+        .btn-excel { background: #007bff; color: white; }
+        button:hover { opacity: 0.8; transform: translateY(-1px); }
     </style>
 </head>
-<body class="bg-slate-50 p-4 md:p-8">
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6">
-        <h2 class="text-2xl font-bold text-center mb-6 text-blue-800">數據統計分析系統</h2>
-        
-        <form id="statsForm" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- 自動帶入項 -->
-                <div>
-                    <label class="block font-medium">執行狀況</label>
-                    <input type="text" id="status" value="已執行" readonly class="w-full p-2 bg-gray-100 border rounded">
-                </div>
-                <div>
-                    <label class="block font-medium">日期時間</label>
-                    <input type="text" id="datetime" readonly class="w-full p-2 bg-gray-100 border rounded">
-                </div>
+<body>
 
-                <!-- 工作人員輸入 -->
-                <div class="md:col-span-2">
-                    <label class="block font-medium">會議類別 (工作人員手動填入)</label>
-                    <input type="text" id="meetingType" required placeholder="例如：專案進度會議" class="w-full p-2 border rounded shadow-sm">
-                </div>
-
-                <!-- 個人資料 -->
-                <div>
-                    <label class="block font-medium">姓名</label>
-                    <input type="text" id="name" required class="w-full p-2 border rounded shadow-sm">
-                </div>
-                <div>
-                    <label class="block font-medium">性別</label>
-                    <select id="gender" required class="w-full p-2 border rounded shadow-sm">
-                        <option value="">請選擇</option>
-                        <option value="男生">男生</option>
-                        <option value="女生">女生</option>
-                        <option value="二次元">二次元</option>
-                    </select>
-                </div>
-
-                <!-- 身份別 (點選後連動) -->
-                <div class="md:col-span-2 p-3 bg-blue-50 rounded-lg">
-                    <label class="block font-medium mb-2">身份別</label>
-                    <div class="flex flex-wrap gap-4 mb-3">
-                        <label class="inline-flex items-center">身障者</label>
-                        <label class="inline-flex items-center">原住民</label>
-                        <label class="inline-flex items-center">新住民</label>
-                        <label class="inline-flex items-center">其他</label>
-                    </div>
-                    <div id="subGenderBox">
-                        <label class="block text-sm text-gray-600">身份別性別對應：</label>
-                        
-                            <option value="">請選擇男性或女性</option>
-                            <option value="男性">男性</option>
-                            <option value="女性">女性</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 其他選單 -->
-                <div>
-                    <label class="block font-medium">居住縣市</label>
-                    <select id="city" required class="w-full p-2 border rounded shadow-sm">
-                        <option value="">請選擇</option>
-                        <option value="台中市">台中市</option><option value="彰化縣">彰化縣</option>
-                        <option value="南投縣">南投縣</option><option value="雲林縣">雲林縣</option>
-                        <option value="嘉義縣">嘉義縣</option><option value="嘉義市">嘉義市</option>
-                        <option value="金門縣">金門縣</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-medium">年齡</label>
-                    <select id="age" required class="w-full p-2 border rounded shadow-sm">
-                        <option value="">請選擇</option>
-                        <option value="0~19">0~19</option><option value="20~29">20~29</option>
-                        <option value="30~39">30~39</option><option value="40~49">40~49</option>
-                        <option value="50~59">50~59</option><option value="60以上">60以上</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block font-medium">學歷</label>
-                    <select id="education" required class="w-full p-2 border rounded shadow-sm">
-                        <option value="">請選擇</option>
-                        <option value="國中以下">國中以下</option><option value="高中職">高中職</option>
-                        <option value="副學士">副學士</option><option value="學士">學士</option>
-                        <option value="碩士">碩士</option><option value="博士">博士</option>
-                    </select>
-                </div>
+<div class="card">
+    <h2>📊 數據統計登錄系統</h2>
+    <form id="dataForm">
+        <div class="form-grid">
+            <div class="field"><label>項次</label><input type="text" id="seq" value="1" readonly></div>
+            <div class="field"><label>執行狀況</label><input type="text" id="status" value="已執行" readonly></div>
+            <div class="field"><label>日期時間</label><input type="text" id="datetime" readonly></div>
+            <div class="field"><label>姓名</label><input type="text" id="name" placeholder="簡易填寫姓名" required></div>
+            <div class="field">
+                <label>性別 (人次選項)</label>
+                <select id="gender">
+                    <option value="男生">男生</option>
+                    <option value="女生">女生</option>
+                    <option value="二次元">二次元</option>
+                </select>
             </div>
-
-            <div class="pt-6 flex flex-col gap-3">
-                <button type="button" onclick="submitData()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">提交單筆資料</button>
-                <button type="button" onclick="exportExcel()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">彙整所有資料並下載 Excel</button>
+            <div class="field">
+                <label>會議類別</label>
+                <input type="text" id="meeting" placeholder="匯出後可於 Excel 填寫">
             </div>
-        </form>
-    </div>
+        </div>
 
-    <script>
-        // 自動載入時間
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('datetime').value = now.toLocaleString();
+        <div class="field">
+            <label>身份別 (點選分類)</label>
+            <div class="radio-group">
+                <label class="radio-item"><input type="radio" name="idType" value="無" checked onclick="toggleSub(false)"> 一般民眾</label>
+                <label class="radio-item"><input type="radio" name="idType" value="身障者" onclick="toggleSub(true)"> 身障者</label>
+                <label class="radio-item"><input type="radio" name="idType" value="原住民" onclick="toggleSub(true)"> 原住民</label>
+                <label class="radio-item"><input type="radio" name="idType" value="新住民" onclick="toggleSub(true)"> 新住民</label>
+                <label class="radio-item"><input type="radio" name="idType" value="其他" onclick="toggleSub(true)"> 其他</label>
+            </div>
+            <div id="subGenderBox" class="sub-menu">
+                <label>不利處境者細分性別：</label>
+                <select id="subGender">
+                    <option value="男性">男性</option>
+                    <option value="女性">女性</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="field">
+                <label>居住縣市</label>
+                <select id="city">
+                    <option>台中市</option><option>彰化縣</option><option>南投縣</option>
+                    <option>雲林縣</option><option>嘉義縣</option><option>嘉義市</option><option>金門縣</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>年齡</label>
+                <select id="age">
+                    <option>0~19</option><option>20~29</option><option>30~39</option>
+                    <option>40~49</option><option>50~59</option><option>60以上</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>學歷</label>
+                <select id="edu">
+                    <option>國中以下</option><option>高中職</option><option>副學士</option>
+                    <option>學士</option><option>碩士</option><option>博士</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="btns">
+            <button type="button" class="btn-submit" onclick="submitData()">提交單筆資料</button>
+            <button type="button" class="btn-excel" onclick="exportExcel()">彙整導出 Excel</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let localData = []; 
+
+    // 自動更新日期時間
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('datetime').value = now.toLocaleString('zh-TW');
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 身份選單切換
+    function toggleSub(show) {
+        document.getElementById('subGenderBox').style.display = show ? 'block' : 'none';
+    }
+
+    // 提交單筆資料
+    async function submitData() {
+        const nameVal = document.getElementById('name').value;
+        if (!nameVal) return alert("請填寫姓名");
+
+        const idType = document.querySelector('input[name="idType"]:checked').value;
+        const entry = {
+            "項次": localData.length + 1,
+            "執行狀況": "已執行",
+            "日期時間": document.getElementById('datetime').value,
+            "會議類別": document.getElementById('meeting').value,
+            "姓名": nameVal,
+            "人次(性別)": document.getElementById('gender').value,
+            "身份別": idType,
+            "身份細分性別": idType !== "無" ? document.getElementById('subGender').value : "N/A",
+            "居住縣市": document.getElementById('city').value,
+            "年齡": document.getElementById('age').value,
+            "學歷": document.getElementById('edu').value
+        };
+
+        localData.push(entry);
+
+        // 串接 Google Sheets (請替換為您的 Apps Script URL)
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxEo19UO3y2lHG8FMEiKWcmCJXGYu4IhXfWjFGS-hRTeTDtIQ75J9hI0dEu9feKRw/exec';
+        try {
+            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
+            alert(`第 ${entry.項次} 筆資料已暫存並提交！`);
+        } catch (e) {
+            console.error('儲存失敗', e);
         }
-        setInterval(updateTime, 1000);
-        updateTime();
 
-        // 模擬本地資料庫 (實際建議串接 Google Sheet API)
-        let db = JSON.parse(localStorage.getItem('meetingData')) || [];
+        // 清理並更新項次
+        document.getElementById('name').value = "";
+        document.getElementById('seq').value = localData.length + 1;
+    }
 
-        function submitData() {
-            const form = document.getElementById('statsForm');
-            const requiredFields = form.querySelectorAll('[required]');
-            let firstErrorField = null;
-
-            // 移除之前的錯誤樣式
-            requiredFields.forEach(f => f.classList.remove('error-field'));
-
-            // 檢查填寫狀況
-            for (let field of requiredFields) {
-                if (!field.value || (field.name === 'identity' && !form.identity.value)) {
-                    field.classList.add('error-field');
-                    if (!firstErrorField) firstErrorField = field;
-                }
-            }
-
-            if (firstErrorField) {
-                firstErrorField.focus();
-                alert('請檢查紅框欄位是否正確填寫！');
-                return;
-            }
-
-            // 儲存資料
-            const entry = {
-                "執行狀況": "已執行",
-                "日期時間": document.getElementById('datetime').value,
-                "會議類別": document.getElementById('meetingType').value,
-                "姓名": document.getElementById('name').value,
-                "性別": document.getElementById('gender').value,
-                "身份別": form.querySelector('input[name="identity"]:checked').value,
-                "身份別性別": document.getElementById('identityGender').value,
-                "居住縣市": document.getElementById('city').value,
-                "年齡": document.getElementById('age').value,
-                "學歷": document.getElementById('education').value
-            };
-
-            db.push(entry);
-            localStorage.setItem('meetingData', JSON.stringify(db));
-            
-            alert('單筆資料儲存成功！');
-            form.reset();
-            updateTime();
-        }
-
-        function exportExcel() {
-            if (db.length === 0) {
-                alert('目前沒有資料可以匯出喔！');
-                return;
-            }
-
-            // 建立活頁簿
-            const ws = XLSX.utils.json_to_sheet(db);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "會議數據匯總");
-
-            // 下載檔案 (瀏覽器會依路徑下載，通常位於桌面或下載資料夾)
-            XLSX.writeFile(wb, `會議統計表_${new Date().getTime()}.xlsx`);
-        }
-    </script>
+    // 彙整並下載 Excel
+    function exportExcel() {
+        if (localData.length === 0) return alert("尚無資料可導出");
+        const ws = XLSX.utils.json_to_sheet(localData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "統計總表");
+        // 下載檔案至桌面(下載資料夾)
+        XLSX.writeFile(wb, `數據彙整表_${new Date().getTime()}.xlsx`);
+    }
+</script>
 </body>
 </html>
